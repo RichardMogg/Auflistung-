@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Anlagenaufnahme">
+  <meta name="format-detection" content="telephone=no">
+  <title>Anlagenaufnahme lokal</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #eef2f7;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #64748b;
+      --border: #cbd5e1;
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --secondary: #dbeafe;
+      --secondary-text: #1e3a8a;
+      --danger: #dc2626;
+      --warning: #f59e0b;
+      --ok-bg: #dcfce7;
+      --ok-text: #166534;
+      --err-bg: #fee2e2;
+      --err-text: #991b1b;
+      --closed-bg: #f8fafc;
+      --open-bg: #ccfbf1;
+      --edit-bg: #fef3c7;
+      --edit-text: #92400e;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body { padding-bottom: calc(116px + env(safe-area-inset-bottom)); }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: linear-gradient(135deg, #0f766e, #164e63);
+      color: #fff;
+      padding: 14px 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 19px;
+      line-height: 1.2;
+    }
+
+    .version {
+      margin-top: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0.9;
+    }
+
+    main {
+      padding: 10px;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    .status {
+      display: none;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      font-weight: 700;
+      white-space: pre-wrap;
+      line-height: 1.35;
+    }
+
+    .status.ok {
+      display: block;
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      border: 1px solid #86efac;
+    }
+
+    .status.error {
+      display: block;
+      background: var(--err-bg);
+      color: var(--err-text);
+      border: 1px solid #fca5a5;
+    }
+
+    .edit-banner {
+      display: none;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      font-weight: 800;
+      background: var(--edit-bg);
+      color: var(--edit-text);
+      border: 1px solid #fbbf24;
+      line-height: 1.35;
+    }
+
+    .edit-banner.active { display: block; }
+
+    .main-section,
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+
+    .main-section > summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 14px;
+      font-size: 18px;
+      font-weight: 900;
+      background: var(--closed-bg);
+      border-bottom: 1px solid transparent;
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .main-section[open] > summary {
+      background: var(--open-bg);
+      border-bottom-color: var(--border);
+    }
+
+    .main-section > summary::-webkit-details-marker { display: none; }
+    .main-section > summary::after {
+      content: "▶";
+      flex: 0 0 auto;
+      color: var(--primary);
+      font-size: 16px;
+    }
+    .main-section[open] > summary::after { content: "▼"; }
+
+    .summary-title {
+      display: block;
+      line-height: 1.2;
+    }
+
+    .summary-sub {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .section-body { padding: 14px; }
+    .card { padding: 14px; }
+
+    .field { margin-bottom: 12px; }
+
+    label {
+      display: block;
+      font-weight: 800;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      min-height: 48px;
+      padding: 11px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 16px;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 95px;
+      resize: vertical;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: 3px solid rgba(15, 118, 110, 0.2);
+      border-color: var(--primary);
+    }
+
+    .checkbox-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 50px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #f8fafc;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .checkbox-box input {
+      width: 24px;
+      height: 24px;
+      min-height: 24px;
+    }
+
+    .photo-box {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+
+    .photo-box input[type="file"] {
+      background: #fff;
+      margin-top: 4px;
+    }
+
+    .photo-list {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.35;
+      white-space: normal;
+    }
+
+    .photo-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 0;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .photo-row:first-child { border-top: 0; }
+
+    .photo-name {
+      overflow-wrap: anywhere;
+      color: #334155;
+      font-weight: 700;
+    }
+
+    .photo-delete {
+      width: auto;
+      min-height: 34px;
+      padding: 7px 10px;
+      border-radius: 9px;
+      font-size: 13px;
+      background: var(--danger);
+      color: #fff;
+    }
+
+    button {
+      width: 100%;
+      min-height: 52px;
+      border: 0;
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:active { background: var(--primary-dark); }
+    .btn-secondary { background: var(--secondary); color: var(--secondary-text); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-warning { background: #fef3c7; color: #92400e; }
+    .btn-light { background: #e5e7eb; color: #111827; }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .bottom-actions {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+      background: rgba(238, 242, 247, 0.96);
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -3px 10px rgba(0,0,0,0.18);
+      backdrop-filter: blur(8px);
+    }
+
+    .ks-card {
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-left: 7px solid var(--primary);
+      border-radius: 16px;
+      margin-bottom: 10px;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+    }
+
+    .ks-card summary {
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 900;
+      background: #e0f2fe;
+      cursor: pointer;
+      list-style: none;
+      border-bottom: 1px solid transparent;
+      min-height: 50px;
+    }
+
+    .ks-card[open] summary {
+      background: #ccfbf1;
+      border-bottom-color: var(--border);
+    }
+
+    .ks-card summary::-webkit-details-marker { display: none; }
+    .ks-card summary::after { content: "▶"; float: right; color: #0f766e; }
+    .ks-card[open] summary::after { content: "▼"; }
+    .ks-body { padding: 14px; }
+
+    .anlage-list-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #f8fafc;
+      line-height: 1.35;
+    }
+
+    .anlage-list-item.editing {
+      border: 2px solid #f59e0b;
+      background: #fffbeb;
+    }
+
+    .anlage-list-item strong { display: block; }
+
+    .small-text {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.35;
+      margin-top: 6px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #075985;
+      font-size: 12px;
+      font-weight: 800;
+      margin-top: 6px;
+    }
+
+    .badge-edit {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    @media (min-width: 720px) {
+      .button-grid { grid-template-columns: 1fr 1fr; }
+      .bottom-actions {
+        max-width: 620px;
+        margin: 0 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Anlagenaufnahme Kälte / Lüftung</h1>
+    <div class="version">LOKAL V1.4 – Fotos pro Hauptanlage und Kühlstelle, dauerhafte IndexedDB-Fotos, ZIP Export</div>
+  </header>
+
+  <main>
+    <div id="status" class="status"></div>
+    <div id="editBanner" class="edit-banner"></div>
+
+    <details class="main-section" id="sectionStammdaten" open>
+      <summary>
+        <span>
+          <span class="summary-title">1. Stammdaten</span>
+          <span class="summary-sub" id="summaryStammdaten">Kunde und Gebäude-Liste</span>
+        </span>
+      </summary>
+      <div class="section-body">
+        <div class="field">
+          <label for="kundeInput">Kunde *</label>
+          <input id="kundeInput" autocomplete="off" placeholder="z. B. Muster GmbH">
+        </div>
+        <div class="field">
+          <label for="gebaeudeListeInput">Gebäude-Liste</label>
+          <textarea id="gebaeudeListeInput" placeholder="Ein Gebäude je Zeile, z. B.&#10;Gebäude A&#10;Gebäude B&#10;Verwaltung"></textarea>
+          <div class="small-text">Diese Liste erzeugt das Gebäude-Dropdown in der Anlagenaufnahme.</div>
+        </div>
+        <button type="button" class="btn-secondary" id="saveStammdatenButton">Stammdaten speichern</button>
+      </div>
+    </details>
+
+    <form id="anlageForm" autocomplete="off">
+      <details class="main-section" id="sectionAnlage">
+        <summary>
+          <span>
+            <span class="summary-title">2. Kälteerzeugung / Verbundanlage</span>
+            <span class="summary-sub" id="summaryAnlage">Noch keine Anlage eingegeben</span>
+          </span>
+        </summary>
+        <div class="section-body" id="anlageFields">
+          <div class="field">
+            <label for="gebaeudeSelect">Gebäude *</label>
+            <select data-field="gebaeude" id="gebaeudeSelect" required>
+              <option value="">Gebäude auswählen</option>
+            </select>
+          </div>
+
+          <div class="field"><label>Bereich / Bauteil / Etage</label><input data-field="bereich" autocomplete="off"></div>
+          <div class="field"><label>Anlagen/Gerätebezeichnung *</label><input data-field="bezeichnung" required autocomplete="off"></div>
+          <div class="field"><label>Leistung</label><input data-field="leistung" autocomplete="off" placeholder="z. B. 25 kW / unbekannt"></div>
+          <div class="field"><label>Kältemittel</label><input data-field="kaeltemittel" autocomplete="off" placeholder="z. B. R449A / R410A / unbekannt"></div>
+          <div class="field"><label>Füllmenge</label><input data-field="fuellmenge" autocomplete="off" placeholder="z. B. 12,5 kg / unbekannt"></div>
+          <div class="field"><label>Anz. Außen</label><input data-field="anzAussen" inputmode="numeric" autocomplete="off"></div>
+          <div class="field"><label>Anz. Innen</label><input data-field="anzInnen" inputmode="numeric" autocomplete="off"></div>
+          <div class="field"><label>Seriennummer</label><input data-field="seriennummer" autocomplete="off"></div>
+
+          <div class="field">
+            <label>Betriebsstatus</label>
+            <select data-field="betriebsstatus">
+              <option value="in Betrieb">in Betrieb</option>
+              <option value="stillgelegt">stillgelegt</option>
+              <option value="unbekannt">unbekannt</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Prüfstatus</label>
+            <select data-field="pruefstatus">
+              <option value="nicht geprüft">nicht geprüft</option>
+              <option value="geprüft">geprüft</option>
+              <option value="nicht beurteilbar">nicht beurteilbar</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Wartungsstatus</label>
+            <select data-field="wartungsstatus">
+              <option value="nicht gewartet">nicht gewartet</option>
+              <option value="gewartet">gewartet</option>
+              <option value="nicht beurteilbar">nicht beurteilbar</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Zustand</label>
+            <select data-field="zustand">
+              <option value="nicht beurteilt">nicht beurteilt</option>
+              <option value="in Ordnung">in Ordnung</option>
+              <option value="mangelhaft">mangelhaft</option>
+            </select>
+          </div>
+
+          <div class="field"><label>Standortinformation</label><textarea data-field="standort"></textarea></div>
+          <div class="field"><label>Mangelbeschreibung</label><textarea data-field="mangelbeschreibung"></textarea></div>
+          <div class="field"><label>Bemerkung</label><textarea data-field="bemerkung"></textarea></div>
+
+          <label class="checkbox-box"><input type="checkbox" data-field="protokoll"> Protokoll</label>
+          <label class="checkbox-box"><input type="checkbox" data-field="pruefbuch"> Prüfbuch</label>
+          <label class="checkbox-box"><input type="checkbox" data-field="plakette"> Plakette</label>
+
+          <div class="photo-box" id="anlagePhotoBox" data-photo-key="">
+            <label>Fotos Hauptanlage / Kälteerzeugung</label>
+            <input type="file" accept="image/*,.heic,.heif,image/heic,image/heif" multiple data-photo-input>
+            <div class="small-text">Fotos werden lokal dauerhaft in IndexedDB gespeichert und beim ZIP-Export der Hauptanlage zugeordnet.</div>
+            <div class="photo-list" data-photo-list>Keine Fotos gespeichert.</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="main-section" id="sectionKuehlstellen">
+        <summary>
+          <span>
+            <span class="summary-title">3. Kühlstellen / Inneneinheiten</span>
+            <span class="summary-sub" id="summaryKuehlstellen">Noch keine Kühlstelle erfasst</span>
+          </span>
+        </summary>
+        <div class="section-body">
+          <div id="kuehlstellenContainer"></div>
+          <button type="button" class="btn-secondary" id="addKuehlstelleButton">+ Kühlstelle hinzufügen</button>
+        </div>
+      </details>
+
+      <details class="main-section" id="sectionListe">
+        <summary>
+          <span>
+            <span class="summary-title">4. Anlagenliste im aktuellen Projekt</span>
+            <span class="summary-sub" id="anlagenSummary">Noch keine Anlage übernommen.</span>
+          </span>
+        </summary>
+        <div class="section-body">
+          <div id="anlagenListe"></div>
+          <div class="button-grid">
+            <button type="button" class="btn-primary" id="anlageUebernehmenButton">Anlage in Liste übernehmen</button>
+            <button type="button" class="btn-light" id="anlageFormularLeerenButton">Formular leeren</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="main-section" id="sectionExport">
+        <summary>
+          <span>
+            <span class="summary-title">5. Export / Daten</span>
+            <span class="summary-sub">JSON, CSV, ZIP, Selbsttest und Löschfunktion</span>
+          </span>
+        </summary>
+        <div class="section-body">
+          <div class="button-grid">
+            <button type="button" class="btn-primary" id="exportJsonButton">JSON exportieren</button>
+            <button type="button" class="btn-primary" id="exportCsvButton">CSV exportieren</button>
+            <button type="button" class="btn-primary" id="exportZipButton">ZIP inkl. Fotos exportieren</button>
+            <button type="button" class="btn-warning" id="entwurfSpeichernButton">Entwurf speichern</button>
+            <button type="button" class="btn-warning" id="selfTestButton">Selbsttest</button>
+            <button type="button" class="btn-danger" id="allesLoeschenButton">Alles inkl. Stammdaten und Fotos löschen</button>
+          </div>
+          <div class="small-text">
+            Der ZIP-Export enthält JSON, CSV und alle gespeicherten Fotos je Hauptanlage und je Kühlstelle.
+          </div>
+        </div>
+      </details>
+
+      <div class="bottom-actions">
+        <button type="button" class="btn-primary" id="bottomUebernehmenButton">Übernehmen</button>
+        <button type="button" class="btn-secondary" id="bottomAddKuehlstelleButton">+ Kühlstelle</button>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    var STORAGE_KEY = 'technik_scout_anlagenaufnahme_lokal_v1';
+    var PHOTO_DB_NAME = 'technik_scout_anlagenaufnahme_fotos_v1';
+    var PHOTO_DB_VERSION = 1;
+    var PHOTO_STORE = 'photos';
+    var photoDbPromise = null;
+
+    var state = {
+      version: 'LOKAL_V1_4',
+      erstelltAm: new Date().toISOString(),
+      aktualisiertAm: new Date().toISOString(),
+      stammdaten: { kunde: '', gebaeudeListe: [] },
+      anlagen: [],
+      draft: null
+    };
+
+    var kuehlstellenCounter = 0;
+    var editingIndex = null;
+    var lineBreak = String.fromCharCode(10);
+    var csvLineBreak = String.fromCharCode(13, 10);
+
+    window.addEventListener('load', function () {
+      bindEvents();
+      loadState();
+      ensureMainPhotoKey();
+      renderAll();
+
+      if (!document.querySelector('.ks-card')) {
+        addKuehlstelle(false);
+      }
+
+      updateAllSummaries();
+      updateEditModeUI();
+      refreshAllPhotoLists();
+      setStatus('Bearbeitungsmodus geladen. Fotos werden dauerhaft lokal in IndexedDB gespeichert und beim ZIP-Export mit ausgegeben.', 'ok');
+    });
+
+    function bindEvents() {
+      document.getElementById('saveStammdatenButton').addEventListener('click', function () {
+        saveStammdatenFromInputs();
+        openMainSection('sectionAnlage', true);
+      });
+
+      document.getElementById('addKuehlstelleButton').addEventListener('click', function () { addKuehlstelle(true); });
+      document.getElementById('bottomAddKuehlstelleButton').addEventListener('click', function () { addKuehlstelle(true); });
+      document.getElementById('anlageUebernehmenButton').addEventListener('click', uebernehmeAnlage);
+      document.getElementById('bottomUebernehmenButton').addEventListener('click', uebernehmeAnlage);
+      document.getElementById('anlageFormularLeerenButton').addEventListener('click', function () { resetAnlagenForm(true); });
+      document.getElementById('exportJsonButton').addEventListener('click', exportJson);
+      document.getElementById('exportCsvButton').addEventListener('click', exportCsv);
+      document.getElementById('exportZipButton').addEventListener('click', exportZip);
+      document.getElementById('selfTestButton').addEventListener('click', runSelfTests);
+      document.getElementById('entwurfSpeichernButton').addEventListener('click', function () {
+        saveCurrentDraft();
+        saveState();
+        updateAllSummaries();
+        setStatus('Entwurf lokal gespeichert. Fotos bleiben separat in IndexedDB erhalten.', 'ok');
+      });
+      document.getElementById('allesLoeschenButton').addEventListener('click', clearAll);
+      document.getElementById('anlageForm').addEventListener('input', throttledDraftSave);
+      document.getElementById('anlageForm').addEventListener('change', function (event) {
+        if (event.target && event.target.matches('[data-photo-input]')) {
+          handlePhotoInputChange(event);
+          return;
+        }
+        throttledDraftSave();
+      });
+      document.getElementById('anlageForm').addEventListener('click', function (event) {
+        if (event.target && event.target.matches('[data-photo-delete]')) {
+          handlePhotoDelete(event.target);
+        }
+      });
+    }
+
+    var draftTimer = null;
+    function throttledDraftSave() {
+      clearTimeout(draftTimer);
+      draftTimer = setTimeout(function () {
+        saveCurrentDraft();
+        saveState(false);
+        updateAllSummaries();
+      }, 350);
+    }
+
+    function openMainSection(sectionId, closeOthers) {
+      var sections = document.querySelectorAll('.main-section');
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i].id === sectionId) {
+          sections[i].open = true;
+          sections[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (closeOthers) {
+          sections[i].open = false;
+        }
+      }
+    }
+
+    function closeOtherKuehlstellen(currentCard) {
+      var cards = document.querySelectorAll('.ks-card');
+      for (var i = 0; i < cards.length; i++) {
+        if (cards[i] !== currentCard) {
+          cards[i].open = false;
+        }
+      }
+    }
+
+    function saveStammdatenFromInputs() {
+      var kunde = document.getElementById('kundeInput').value.trim();
+      var rawGebaeude = document.getElementById('gebaeudeListeInput').value;
+      var gebaeudeListe = parseGebaeudeListe(rawGebaeude);
+
+      state.stammdaten.kunde = kunde;
+      state.stammdaten.gebaeudeListe = gebaeudeListe;
+      saveState();
+      renderGebaeudeDropdown();
+      updateAllSummaries();
+      setStatus('Stammdaten gespeichert. Gebäude im Dropdown: ' + gebaeudeListe.length, 'ok');
+    }
+
+    function parseGebaeudeListe(raw) {
+      var lines = String(raw || '').split(/\r?\n/);
+      var gebaeudeListe = [];
+      for (var i = 0; i < lines.length; i++) {
+        var value = lines[i].trim();
+        if (value && gebaeudeListe.indexOf(value) === -1) {
+          gebaeudeListe.push(value);
+        }
+      }
+      return gebaeudeListe;
+    }
+
+    function loadState() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        var parsed = JSON.parse(raw);
+        if (parsed && parsed.version) {
+          state = parsed;
+          if (!state.stammdaten) state.stammdaten = { kunde: '', gebaeudeListe: [] };
+          if (!Array.isArray(state.anlagen)) state.anlagen = [];
+        }
+      } catch (error) {
+        setStatus('Lokaler Entwurf konnte nicht gelesen werden: ' + getErrorText(error), 'error');
+      }
+    }
+
+    function saveState(showError) {
+      try {
+        state.aktualisiertAm = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (error) {
+        if (showError !== false) {
+          setStatus('Lokales Speichern fehlgeschlagen: ' + getErrorText(error), 'error');
+        }
+      }
+    }
+
+    function renderAll() {
+      document.getElementById('kundeInput').value = state.stammdaten.kunde || '';
+      document.getElementById('gebaeudeListeInput').value = (state.stammdaten.gebaeudeListe || []).join(lineBreak);
+      renderGebaeudeDropdown();
+      renderAnlagenListe();
+      restoreDraft();
+      updateAllSummaries();
+      updateEditModeUI();
+      refreshAllPhotoLists();
+    }
+
+    function renderGebaeudeDropdown() {
+      var select = document.getElementById('gebaeudeSelect');
+      var currentValue = select.value;
+      var list = state.stammdaten.gebaeudeListe || [];
+
+      select.innerHTML = '';
+      var placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = list.length ? 'Gebäude auswählen' : 'Erst Gebäude in Stammdaten eintragen';
+      select.appendChild(placeholder);
+
+      for (var i = 0; i < list.length; i++) {
+        var option = document.createElement('option');
+        option.value = list[i];
+        option.textContent = list[i];
+        select.appendChild(option);
+      }
+
+      if (currentValue && list.indexOf(currentValue) !== -1) {
+        select.value = currentValue;
+      } else if (state.draft && state.draft.anlage && state.draft.anlage.gebaeude) {
+        select.value = state.draft.anlage.gebaeude;
+      }
+    }
+
+    function addKuehlstelle(scrollToNewCard, values) {
+      kuehlstellenCounter++;
+      var container = document.getElementById('kuehlstellenContainer');
+      var card = document.createElement('details');
+      card.className = 'ks-card';
+      card.open = true;
+
+      card.innerHTML =
+        '<summary><span class="ks-summary-title">Kühlstelle / Inneneinheit ' + kuehlstellenCounter + '</span></summary>' +
+        '<div class="ks-body">' +
+          fieldHtml('Anlagen/Gerätebezeichnung', 'bezeichnung', 'input') +
+          fieldHtml('Leistung', 'leistung', 'input') +
+          fieldHtml('Seriennummer', 'seriennummer', 'input') +
+          selectHtml('Betriebsstatus', 'betriebsstatus', ['in Betrieb', 'stillgelegt', 'unbekannt']) +
+          selectHtml('Prüfstatus', 'pruefstatus', ['nicht geprüft', 'geprüft', 'nicht beurteilbar']) +
+          selectHtml('Wartungsstatus', 'wartungsstatus', ['nicht gewartet', 'gewartet', 'nicht beurteilbar']) +
+          selectHtml('Zustand', 'zustand', ['nicht beurteilt', 'in Ordnung', 'mangelhaft']) +
+          fieldHtml('Standortinformation', 'standort', 'textarea') +
+          fieldHtml('Mangelbeschreibung', 'mangelbeschreibung', 'textarea') +
+          fieldHtml('Bemerkung', 'bemerkung', 'textarea') +
+          '<label class="checkbox-box"><input type="checkbox" data-field="plakette"> Plakette</label>' +
+          photoBoxHtml('Fotos Kühlstelle / Inneneinheit', 'Fotos werden dauerhaft lokal gespeichert und beim ZIP-Export dieser Kühlstelle zugeordnet.') +
+          '<button type="button" class="btn-danger ks-remove">Diese Kühlstelle entfernen</button>' +
+        '</div>';
+
+      assignKuehlstellePhotoKey(card, values);
+
+      var removeButton = card.querySelector('.ks-remove');
+      removeButton.addEventListener('click', function () {
+        cleanupPhotoKeyIfTemporary(card.getAttribute('data-photo-key'));
+        container.removeChild(card);
+        saveCurrentDraft();
+        saveState(false);
+        updateAllSummaries();
+      });
+
+      card.addEventListener('input', function () { updateKuehlstellenSummaries(); });
+      card.addEventListener('toggle', function () {
+        if (card.open) closeOtherKuehlstellen(card);
+      });
+
+      container.appendChild(card);
+
+      if (values) setFields(card, values);
+      closeOtherKuehlstellen(card);
+      updateAllSummaries();
+      updatePhotoListForBox(card.querySelector('.photo-box'));
+      openMainSection('sectionKuehlstellen', true);
+
+      if (scrollToNewCard) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function fieldHtml(label, field, type) {
+      if (type === 'textarea') {
+        return '<div class="field"><label>' + escapeHtml(label) + '</label><textarea data-field="' + field + '"></textarea></div>';
+      }
+      return '<div class="field"><label>' + escapeHtml(label) + '</label><input data-field="' + field + '" autocomplete="off"></div>';
+    }
+
+    function selectHtml(label, field, options) {
+      var html = '<div class="field"><label>' + escapeHtml(label) + '</label><select data-field="' + field + '">';
+      for (var i = 0; i < options.length; i++) {
+        html += '<option value="' + escapeAttr(options[i]) + '">' + escapeHtml(options[i]) + '</option>';
+      }
+      html += '</select></div>';
+      return html;
+    }
+
+    function photoBoxHtml(label, helpText) {
+      return '<div class="photo-box" data-photo-key="">' +
+        '<label>' + escapeHtml(label) + '</label>' +
+        '<input type="file" accept="image/*,.heic,.heif,image/heic,image/heif" multiple data-photo-input>' +
+        '<div class="small-text">' + escapeHtml(helpText) + '</div>' +
+        '<div class="photo-list" data-photo-list>Keine Fotos gespeichert.</div>' +
+      '</div>';
+    }
+
+    async function uebernehmeAnlage() {
+      saveStammdatenFromInputs();
+      var form = document.getElementById('anlageForm');
+      if (!form.reportValidity()) return;
+
+      var anlage = collectFields(document.getElementById('anlageFields'));
+      var kuehlstellen = collectKuehlstellen();
+
+      if (!state.stammdaten.kunde) {
+        setStatus('Bitte Kunde in den Stammdaten eintragen.', 'error');
+        openMainSection('sectionStammdaten', true);
+        return;
+      }
+
+      var now = new Date().toISOString();
+      var existing = editingIndex !== null ? state.anlagen[editingIndex] : null;
+
+      var record = {
+        anlagenId: existing ? existing.anlagenId : createId('KE'),
+        zeitstempel: existing ? existing.zeitstempel : now,
+        bearbeitetAm: now,
+        kunde: state.stammdaten.kunde,
+        anlage: anlage,
+        kuehlstellen: kuehlstellen
+      };
+
+      try {
+        await finalizeRecordPhotoKeys(record, existing);
+
+        if (editingIndex !== null) {
+          state.anlagen[editingIndex] = record;
+          setStatus('Änderungen gespeichert. Anlagen-ID bleibt: ' + record.anlagenId, 'ok');
+        } else {
+          state.anlagen.push(record);
+          setStatus('Anlage übernommen. Anlagen im Projekt: ' + state.anlagen.length, 'ok');
+        }
+
+        editingIndex = null;
+        state.draft = null;
+        saveState();
+        renderAnlagenListe();
+        await resetAnlagenForm(false);
+        updateAllSummaries();
+        updateEditModeUI();
+        openMainSection('sectionListe', true);
+      } catch (error) {
+        setStatus('Anlage konnte wegen der Foto-Speicherung nicht übernommen werden: ' + getErrorText(error), 'error');
+      }
+    }
+
+    async function loadAnlageForEdit(index) {
+      if (index < 0 || index >= state.anlagen.length) {
+        setStatus('Anlage konnte nicht zum Bearbeiten geladen werden.', 'error');
+        return;
+      }
+
+      var originalItem = state.anlagen[index];
+      var item = await buildEditableRecordWithStagedPhotos(originalItem);
+      editingIndex = index;
+
+      if (item.kunde) {
+        state.stammdaten.kunde = item.kunde;
+        document.getElementById('kundeInput').value = item.kunde;
+      }
+
+      if (item.anlage && item.anlage.gebaeude) {
+        var list = state.stammdaten.gebaeudeListe || [];
+        if (list.indexOf(item.anlage.gebaeude) === -1) {
+          list.push(item.anlage.gebaeude);
+          state.stammdaten.gebaeudeListe = list;
+          document.getElementById('gebaeudeListeInput').value = list.join(lineBreak);
+        }
+      }
+
+      renderGebaeudeDropdown();
+      setFields(document.getElementById('anlageFields'), item.anlage || {});
+      setMainPhotoKey(item.anlage && item.anlage.fotoKey ? item.anlage.fotoKey : makeEditPhotoKey(item.anlagenId, 'main'));
+
+      var container = document.getElementById('kuehlstellenContainer');
+      container.innerHTML = '';
+      kuehlstellenCounter = 0;
+
+      var kuehlstellen = item.kuehlstellen || [];
+      if (kuehlstellen.length === 0) {
+        addKuehlstelle(false);
+      } else {
+        for (var i = 0; i < kuehlstellen.length; i++) {
+          addKuehlstelle(false, kuehlstellen[i]);
+        }
+      }
+
+      state.draft = {
+        editingIndex: editingIndex,
+        anlage: collectFields(document.getElementById('anlageFields')),
+        kuehlstellen: collectKuehlstellen()
+      };
+      saveState(false);
+      updateAllSummaries();
+      updateEditModeUI();
+      renderAnlagenListe();
+      refreshAllPhotoLists();
+      openMainSection('sectionAnlage', true);
+      setStatus('Bearbeitungsmodus aktiv. Fotoänderungen werden erst mit „Änderungen speichern“ endgültig übernommen.', 'ok');
+    }
+
+    function cancelEditMode() {
+      editingIndex = null;
+      state.draft = null;
+      updateEditModeUI();
+      renderAnlagenListe();
+    }
+
+    function updateEditModeUI() {
+      var primaryButtons = [
+        document.getElementById('anlageUebernehmenButton'),
+        document.getElementById('bottomUebernehmenButton')
+      ];
+      var banner = document.getElementById('editBanner');
+
+      if (editingIndex !== null && state.anlagen[editingIndex]) {
+        for (var i = 0; i < primaryButtons.length; i++) {
+          primaryButtons[i].textContent = 'Änderungen speichern';
+        }
+
+        var item = state.anlagen[editingIndex];
+        var name = item.anlage && item.anlage.bezeichnung ? item.anlage.bezeichnung : item.anlagenId;
+        banner.textContent = 'Bearbeitungsmodus aktiv: ' + name + ' | Anlagen-ID: ' + item.anlagenId;
+        banner.className = 'edit-banner active';
+      } else {
+        for (var j = 0; j < primaryButtons.length; j++) {
+          primaryButtons[j].textContent = j === 0 ? 'Anlage in Liste übernehmen' : 'Übernehmen';
+        }
+        banner.textContent = '';
+        banner.className = 'edit-banner';
+      }
+    }
+
+    function collectKuehlstellen() {
+      var cards = document.querySelectorAll('.ks-card');
+      var result = [];
+      for (var i = 0; i < cards.length; i++) {
+        var ks = collectFields(cards[i]);
+        ks.fotoKey = cards[i].getAttribute('data-photo-key') || makeDraftPhotoKey('kuehlstelle');
+        ks.hasFotos = cards[i].getAttribute('data-has-photos') === 'true';
+        if (!isEmptyKuehlstelle(ks)) {
+          ks.lfdNr = result.length + 1;
+          ks.kuehlstellenId = ks.kuehlstellenId || ('KS-' + pad3(result.length + 1));
+          result.push(ks);
+        }
+      }
+      return result;
+    }
+
+    function collectFields(container) {
+      var result = {};
+      var fields = container.querySelectorAll('[data-field]');
+      for (var i = 0; i < fields.length; i++) {
+        var element = fields[i];
+        var key = element.getAttribute('data-field');
+        result[key] = element.type === 'checkbox' ? element.checked : (element.value || '');
+      }
+
+      if (container.id === 'anlageFields') {
+        var box = document.getElementById('anlagePhotoBox');
+        if (box) {
+          result.fotoKey = box.getAttribute('data-photo-key') || box.dataset.photoKey || makeDraftPhotoKey('anlage');
+          result.hasFotos = box.getAttribute('data-has-photos') === 'true';
+        }
+      }
+
+      return result;
+    }
+
+    function setFields(container, data) {
+      var fields = container.querySelectorAll('[data-field]');
+      for (var i = 0; i < fields.length; i++) {
+        var element = fields[i];
+        var key = element.getAttribute('data-field');
+        if (!data || data[key] === undefined) continue;
+        if (element.type === 'checkbox') element.checked = data[key] === true;
+        else element.value = data[key];
+      }
+    }
+
+    function isEmptyKuehlstelle(ks) {
+      if (ks.hasFotos === true) return false;
+      var fields = ['bezeichnung', 'leistung', 'seriennummer', 'standort', 'mangelbeschreibung', 'bemerkung'];
+      for (var i = 0; i < fields.length; i++) {
+        if ((ks[fields[i]] || '').trim() !== '') return false;
+      }
+      return ks.plakette !== true;
+    }
+
+    function saveCurrentDraft() {
+      ensureMainPhotoKey();
+      state.draft = {
+        editingIndex: editingIndex,
+        anlage: collectFields(document.getElementById('anlageFields')),
+        kuehlstellen: collectKuehlstellen()
+      };
+    }
+
+    function restoreDraft() {
+      ensureMainPhotoKey();
+      if (!state.draft) return;
+
+      if (typeof state.draft.editingIndex === 'number' && state.anlagen[state.draft.editingIndex]) {
+        editingIndex = state.draft.editingIndex;
+      }
+
+      if (state.draft.anlage) {
+        setFields(document.getElementById('anlageFields'), state.draft.anlage);
+        if (state.draft.anlage.fotoKey) setMainPhotoKey(state.draft.anlage.fotoKey);
+      }
+
+      var container = document.getElementById('kuehlstellenContainer');
+      container.innerHTML = '';
+      kuehlstellenCounter = 0;
+
+      var kuehlstellen = state.draft.kuehlstellen || [];
+      if (kuehlstellen.length === 0) addKuehlstelle(false);
+      else {
+        for (var i = 0; i < kuehlstellen.length; i++) addKuehlstelle(false, kuehlstellen[i]);
+      }
+    }
+
+    async function resetAnlagenForm(showMessage) {
+      await cleanupCurrentTemporaryPhotos();
+
+      var anlageFields = document.getElementById('anlageFields');
+      var fields = anlageFields.querySelectorAll('[data-field]');
+      for (var i = 0; i < fields.length; i++) {
+        var element = fields[i];
+        if (element.type === 'checkbox') element.checked = false;
+        else if (element.tagName === 'SELECT') element.selectedIndex = 0;
+        else element.value = '';
+      }
+
+      setMainPhotoKey(makeDraftPhotoKey('anlage'));
+      updatePhotoListForBox(document.getElementById('anlagePhotoBox'));
+
+      document.getElementById('kuehlstellenContainer').innerHTML = '';
+      kuehlstellenCounter = 0;
+      addKuehlstelle(false);
+
+      cancelEditMode();
+      state.draft = null;
+      saveState(false);
+      updateAllSummaries();
+      updateEditModeUI();
+      openMainSection('sectionAnlage', true);
+
+      if (showMessage !== false) {
+        setStatus('Formular wurde geleert. Bereits übernommene Anlagen und deren endgültig gespeicherte Fotos bleiben erhalten.', 'ok');
+      }
+    }
+
+    function renderAnlagenListe() {
+      var summary = document.getElementById('anlagenSummary');
+      var list = document.getElementById('anlagenListe');
+      var count = state.anlagen.length;
+
+      summary.textContent = count === 0 ? 'Noch keine Anlage übernommen.' : count + ' Anlage(n) im aktuellen Projekt gespeichert.';
+      list.innerHTML = '';
+
+      for (var i = 0; i < state.anlagen.length; i++) {
+        var item = state.anlagen[i];
+        var isEditing = editingIndex === i;
+        var div = document.createElement('div');
+        div.className = isEditing ? 'anlage-list-item editing' : 'anlage-list-item';
+        div.innerHTML =
+          '<strong>' + escapeHtml(item.anlage.bezeichnung || 'ohne Bezeichnung') + '</strong>' +
+          'Anlagen-ID: ' + escapeHtml(item.anlagenId || '-') + '<br>' +
+          'Gebäude: ' + escapeHtml(item.anlage.gebaeude || '-') + '<br>' +
+          'Bereich: ' + escapeHtml(item.anlage.bereich || '-') + '<br>' +
+          '<span class="badge">' + item.kuehlstellen.length + ' Kühlstelle(n)</span> ' +
+          '<span class="badge" data-photo-count-index="' + i + '">Fotos werden gezählt ...</span>' +
+          (isEditing ? ' <span class="badge badge-edit">in Bearbeitung</span>' : '') +
+          '<div class="button-grid">' +
+            '<button type="button" class="btn-warning" data-edit-index="' + i + '">Bearbeiten</button>' +
+            '<button type="button" class="btn-danger" data-delete-index="' + i + '">Diese Anlage löschen</button>' +
+          '</div>';
+        list.appendChild(div);
+      }
+
+      var editButtons = list.querySelectorAll('[data-edit-index]');
+      for (var e = 0; e < editButtons.length; e++) {
+        editButtons[e].addEventListener('click', function () {
+          loadAnlageForEdit(Number(this.getAttribute('data-edit-index')));
+        });
+      }
+
+      var deleteButtons = list.querySelectorAll('[data-delete-index]');
+      for (var j = 0; j < deleteButtons.length; j++) {
+        deleteButtons[j].addEventListener('click', function () {
+          deleteAnlage(Number(this.getAttribute('data-delete-index')));
+        });
+      }
+
+      updatePhotoBadgesInList();
+    }
+
+    async function deleteAnlage(index) {
+      if (!confirm('Diese Anlage aus der lokalen Liste löschen? Zugeordnete Fotos dieser Anlage werden ebenfalls gelöscht.')) return;
+      var record = state.anlagen[index];
+      if (record) await deleteRecordPhotos(record);
+      state.anlagen.splice(index, 1);
+
+      if (editingIndex === index) {
+        editingIndex = null;
+        await resetAnlagenForm(false);
+      } else if (editingIndex !== null && editingIndex > index) {
+        editingIndex--;
+      }
+
+      saveState();
+      renderAnlagenListe();
+      updateAllSummaries();
+      updateEditModeUI();
+      setStatus('Anlage inklusive zugeordneter Fotos gelöscht.', 'ok');
+    }
+
+    function updateAllSummaries() {
+      updateMainSummaries();
+      updateKuehlstellenSummaries();
+    }
+
+    function updateMainSummaries() {
+      var kunde = state.stammdaten.kunde || 'kein Kunde';
+      var gebaeudeCount = (state.stammdaten.gebaeudeListe || []).length;
+      document.getElementById('summaryStammdaten').textContent = kunde + ' | Gebäude: ' + gebaeudeCount;
+
+      var anlage = collectFields(document.getElementById('anlageFields'));
+      var anlageText = anlage.bezeichnung || 'Noch keine Anlage eingegeben';
+      if (anlage.gebaeude) anlageText += ' | ' + anlage.gebaeude;
+      if (anlage.bereich) anlageText += ' | ' + anlage.bereich;
+      if (editingIndex !== null) anlageText = 'Bearbeitung: ' + anlageText;
+      document.getElementById('summaryAnlage').textContent = anlageText;
+
+      var ksCount = collectKuehlstellen().length;
+      var cardsCount = document.querySelectorAll('.ks-card').length;
+      document.getElementById('summaryKuehlstellen').textContent = ksCount + ' gefüllte Kühlstelle(n), ' + cardsCount + ' Karte(n) sichtbar';
+    }
+
+    function updateKuehlstellenSummaries() {
+      var cards = document.querySelectorAll('.ks-card');
+      for (var i = 0; i < cards.length; i++) {
+        var data = collectFields(cards[i]);
+        var title = 'Kühlstelle / Inneneinheit ' + (i + 1);
+        if (data.bezeichnung) title += ' – ' + data.bezeichnung;
+        else if (data.standort) title += ' – ' + data.standort;
+        if (cards[i].getAttribute('data-has-photos') === 'true') title += ' – Fotos';
+        var summaryTitle = cards[i].querySelector('.ks-summary-title');
+        if (summaryTitle) summaryTitle.textContent = title;
+      }
+    }
+
+    async function exportJson() {
+      if (!ensureExportReady()) return;
+      var project = await buildExportProject(true);
+      var content = JSON.stringify(project, null, 2);
+      downloadFile(buildFileName('json'), content, 'application/json;charset=utf-8');
+      setStatus('JSON-Datei wurde erstellt. Fotodateien selbst sind im ZIP-Export enthalten.', 'ok');
+    }
+
+    function exportCsv() {
+      if (!ensureExportReady()) return;
+      var csv = buildCsv();
+      downloadFile(buildFileName('csv'), String.fromCharCode(65279) + csv, 'text/csv;charset=utf-8');
+      setStatus('CSV-Datei wurde erstellt. Fotodateien selbst sind im ZIP-Export enthalten.', 'ok');
+    }
+
+    async function exportZip() {
+      if (!ensureExportReady()) return;
+      try {
+        setStatus('ZIP-Datei wird erstellt ...', 'ok');
+        var project = await buildExportProject(true);
+        var files = [];
+        files.push({ name: 'anlagenaufnahme.json', data: JSON.stringify(project, null, 2) });
+        files.push({ name: 'anlagenaufnahme.csv', data: String.fromCharCode(65279) + buildCsv() });
+
+        for (var i = 0; i < state.anlagen.length; i++) {
+          var item = state.anlagen[i];
+          var anlageDaten = item.anlage || {};
+          var gebaeudeName = anlageDaten.gebaeude ? anlageDaten.gebaeude : 'ohne_Gebaeude';
+          var bereichName = anlageDaten.bereich ? anlageDaten.bereich : 'ohne_Bereich';
+          var anlageName = anlageDaten.bezeichnung ? anlageDaten.bezeichnung : 'ohne_Bezeichnung';
+          var folder = 'anlage_' + pad3(i + 1) + '_' + safePathPart(item.anlagenId || ('anlage_' + (i + 1))) + '_' + safePathPart(gebaeudeName) + '_' + safePathPart(bereichName) + '_' + safePathPart(anlageName);
+          await addPhotosToZip(files, getFinalAnlagePhotoKey(item.anlagenId), folder + '/hauptanlage');
+
+          var kuehlstellen = item.kuehlstellen || [];
+          for (var k = 0; k < kuehlstellen.length; k++) {
+            var ks = kuehlstellen[k];
+            var ksId = ks.kuehlstellenId || ('KS-' + pad3(k + 1));
+            var ksName = ks.bezeichnung ? ks.bezeichnung : 'ohne_Bezeichnung';
+            var ksFolder = folder + '/kuehlstelle_' + pad3(k + 1) + '_' + safePathPart(ksId) + '_' + safePathPart(ksName);
+            await addPhotosToZip(files, getFinalKuehlstellePhotoKey(item.anlagenId, ksId), ksFolder);
+          }
+        }
+
+        var zipBytes = buildZip(files);
+        downloadBlob(buildFileName('zip'), new Blob([zipBytes], { type: 'application/zip' }));
+        setStatus('ZIP-Datei wurde erstellt. Enthalten: JSON, CSV und Fotos je Hauptanlage/Kühlstelle.', 'ok');
+      } catch (error) {
+        setStatus('ZIP-Export fehlgeschlagen: ' + getErrorText(error), 'error');
+      }
+    }
+
+    function ensureExportReady() {
+      saveStammdatenFromInputs();
+      if (editingIndex !== null) {
+        setStatus('Es ist noch eine Anlage im Bearbeitungsmodus. Erst Änderungen speichern oder Formular leeren.', 'error');
+        openMainSection('sectionListe', true);
+        return false;
+      }
+      if (state.anlagen.length === 0) {
+        setStatus('Es ist noch keine Anlage in der Liste. Erst Anlage in Liste übernehmen drücken.', 'error');
+        openMainSection('sectionListe', true);
+        return false;
+      }
+      return true;
+    }
+
+    async function buildExportProject(includePhotoMeta) {
+      var project = {
+        exportFormat: 'TechnikScout_Anlagenaufnahme_JSON_V1_4',
+        exportiertAm: new Date().toISOString(),
+        stammdaten: JSON.parse(JSON.stringify(state.stammdaten)),
+        anlagen: JSON.parse(JSON.stringify(state.anlagen))
+      };
+
+      if (includePhotoMeta !== false) {
+        for (var i = 0; i < project.anlagen.length; i++) {
+          var item = project.anlagen[i];
+          if (!item.anlage) item.anlage = {};
+          item.anlage.fotoKey = getFinalAnlagePhotoKey(item.anlagenId);
+          item.anlage.fotos = await getPhotoMeta(item.anlage.fotoKey);
+
+          var kuehlstellen = item.kuehlstellen || [];
+          for (var k = 0; k < kuehlstellen.length; k++) {
+            var ks = kuehlstellen[k];
+            var ksId = ks.kuehlstellenId || ('KS-' + pad3(k + 1));
+            ks.fotoKey = getFinalKuehlstellePhotoKey(item.anlagenId, ksId);
+            ks.fotos = await getPhotoMeta(ks.fotoKey);
+          }
+        }
+      }
+
+      return project;
+    }
+
+    function buildCsv() {
+      var headers = [
+        'Datensatztyp', 'Kunde', 'Gebäude', 'Anlagen_ID', 'Kuehlstellen_ID', 'Lfd_Nr',
+        'Bereich', 'Kaelteerzeugung_Bezeichnung', 'Kaelteerzeugung_Leistung', 'Kaeltemittel',
+        'Fuellmenge', 'Anz_Aussen', 'Anz_Innen', 'Kaelteerzeugung_Seriennummer',
+        'Kaelteerzeugung_Standort', 'Kaelteerzeugung_Betriebsstatus', 'Kaelteerzeugung_Pruefstatus',
+        'Kaelteerzeugung_Wartungsstatus', 'Kaelteerzeugung_Protokoll', 'Kaelteerzeugung_Pruefbuch',
+        'Kaelteerzeugung_Plakette', 'Kaelteerzeugung_Zustand', 'Kaelteerzeugung_Mangelbeschreibung',
+        'Kaelteerzeugung_Bemerkung', 'Kuehlstelle_Bezeichnung', 'Kuehlstelle_Leistung',
+        'Kuehlstelle_Seriennummer', 'Kuehlstelle_Standort', 'Kuehlstelle_Betriebsstatus',
+        'Kuehlstelle_Pruefstatus', 'Kuehlstelle_Wartungsstatus', 'Kuehlstelle_Plakette',
+        'Kuehlstelle_Zustand', 'Kuehlstelle_Mangelbeschreibung', 'Kuehlstelle_Bemerkung', 'Zeitstempel', 'BearbeitetAm'
+      ];
+
+      var rows = [headers];
+      for (var i = 0; i < state.anlagen.length; i++) {
+        var item = state.anlagen[i];
+        var a = item.anlage || {};
+        var base = [
+          '', item.kunde || state.stammdaten.kunde || '', a.gebaeude || '', item.anlagenId || '', '', '',
+          a.bereich || '', a.bezeichnung || '', a.leistung || '', a.kaeltemittel || '', a.fuellmenge || '',
+          a.anzAussen || '', a.anzInnen || '', a.seriennummer || '', a.standort || '', a.betriebsstatus || '',
+          a.pruefstatus || '', a.wartungsstatus || '', boolText(a.protokoll), boolText(a.pruefbuch),
+          boolText(a.plakette), a.zustand || '', a.mangelbeschreibung || '', a.bemerkung || ''
+        ];
+
+        if (!item.kuehlstellen || item.kuehlstellen.length === 0) {
+          rows.push(['Kaelteerzeugung'].concat(base.slice(1)).concat(['', '', '', '', '', '', '', '', '', '', '', item.zeitstempel || '', item.bearbeitetAm || '']));
+        } else {
+          for (var k = 0; k < item.kuehlstellen.length; k++) {
+            var ks = item.kuehlstellen[k] || {};
+            var row = base.slice();
+            row[0] = 'Kuehlstelle';
+            row[4] = item.anlagenId + '-' + (ks.kuehlstellenId || ('KS-' + pad3(k + 1)));
+            row[5] = ks.lfdNr || (k + 1);
+            row = row.concat([
+              ks.bezeichnung || '', ks.leistung || '', ks.seriennummer || '', ks.standort || '',
+              ks.betriebsstatus || '', ks.pruefstatus || '', ks.wartungsstatus || '', boolText(ks.plakette),
+              ks.zustand || '', ks.mangelbeschreibung || '', ks.bemerkung || '', item.zeitstempel || '', item.bearbeitetAm || ''
+            ]);
+            rows.push(row);
+          }
+        }
+      }
+
+      return rows.map(function (row) { return row.map(csvCell).join(';'); }).join(csvLineBreak);
+    }
+
+    function downloadFile(filename, content, mimeType) {
+      var blob = new Blob([content], { type: mimeType });
+      downloadBlob(filename, blob);
+    }
+
+    function downloadBlob(filename, blob) {
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+
+      try {
+        link.click();
+      } catch (error) {
+        window.open(url, '_blank');
+      }
+
+      document.body.removeChild(link);
+
+      if (isAppleTouchDevice()) {
+        setStatus('Download gestartet. Falls iPhone/iPad statt Speichern eine Vorschau öffnet: Teilen → In Dateien sichern.', 'ok');
+        setTimeout(function () { URL.revokeObjectURL(url); }, 15000);
+      } else {
+        setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+      }
+    }
+
+    function isAppleTouchDevice() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+
+    function buildFileName(extension) {
+      var kunde = state.stammdaten.kunde || 'kunde';
+      var date = new Date();
+      var stamp = date.getFullYear() + '-' + pad2(date.getMonth() + 1) + '-' + pad2(date.getDate()) + '_' + pad2(date.getHours()) + '-' + pad2(date.getMinutes());
+      return sanitizeFileName('anlagenaufnahme_' + kunde + '_' + stamp + '.' + extension);
+    }
+
+    async function clearAll() {
+      var messageLines = [
+        'Wirklich ALLES löschen?', '', 'Gelöscht werden:', '- Kunde', '- Gebäude-Liste',
+        '- alle übernommenen Anlagen', '- aktueller Entwurf', '- alle lokal gespeicherten Fotos', '',
+        'Vorher ZIP exportieren, falls die Daten und Fotos gebraucht werden.'
+      ];
+
+      if (!confirm(messageLines.join(lineBreak))) return;
+
+      localStorage.removeItem(STORAGE_KEY);
+      await clearPhotoDb();
+      editingIndex = null;
+      state = {
+        version: 'LOKAL_V1_4',
+        erstelltAm: new Date().toISOString(),
+        aktualisiertAm: new Date().toISOString(),
+        stammdaten: { kunde: '', gebaeudeListe: [] },
+        anlagen: [],
+        draft: null
+      };
+
+      document.getElementById('kundeInput').value = '';
+      document.getElementById('gebaeudeListeInput').value = '';
+      document.getElementById('kuehlstellenContainer').innerHTML = '';
+      kuehlstellenCounter = 0;
+      setMainPhotoKey(makeDraftPhotoKey('anlage'));
+      renderAll();
+      if (!document.querySelector('.ks-card')) addKuehlstelle(false);
+      updateAllSummaries();
+      updateEditModeUI();
+      refreshAllPhotoLists();
+      openMainSection('sectionStammdaten', true);
+      setStatus('Alle lokalen Daten inklusive Fotos wurden gelöscht. Das Formular ist bereit für einen anderen Kunden.', 'ok');
+    }
+
+    function runSelfTests() {
+      var failures = [];
+      function assert(name, condition) {
+        if (!condition) failures.push(name);
+      }
+
+      assert('pad2', pad2(5) === '05');
+      assert('pad3', pad3(7) === '007');
+      assert('bool true', boolText(true) === 'Ja');
+      assert('bool false', boolText(false) === 'Nein');
+      assert('csv quotes', csvCell('A"B') === '"A""B"');
+      assert('sanitize filename', sanitizeFileName('A/B:C?.csv').indexOf('/') === -1);
+      assert('parse buildings count', parseGebaeudeListe('A' + lineBreak + 'B' + lineBreak + 'A').length === 2);
+      assert('main photo key helper', getFinalAnlagePhotoKey('KE-1') === 'anlage:KE-1:main');
+      assert('ks photo key helper', getFinalKuehlstellePhotoKey('KE-1', 'KS-001') === 'anlage:KE-1:ks:KS-001');
+      assert('zip function exists', typeof buildZip === 'function');
+
+      var oldAnlagen = state.anlagen;
+      var oldEditingIndex = editingIndex;
+      state.anlagen = [{
+        anlagenId: 'KE-TEST',
+        zeitstempel: '2026-01-01T00:00:00.000Z',
+        bearbeitetAm: '2026-01-01T00:00:00.000Z',
+        kunde: 'Testkunde',
+        anlage: { gebaeude: 'Gebäude A', bezeichnung: 'Verbund 1', fotoKey: getFinalAnlagePhotoKey('KE-TEST') },
+        kuehlstellen: [{ kuehlstellenId: 'KS-001', lfdNr: 1, bezeichnung: 'Innen 1', plakette: true, fotoKey: getFinalKuehlstellePhotoKey('KE-TEST', 'KS-001') }]
+      }];
+      var csv = buildCsv();
+      assert('csv contains test asset', csv.indexOf('Verbund 1') !== -1);
+      assert('csv contains child asset', csv.indexOf('Innen 1') !== -1);
+      assert('edit function exists', typeof loadAnlageForEdit === 'function');
+      state.anlagen = oldAnlagen;
+      editingIndex = oldEditingIndex;
+
+      var section = document.getElementById('sectionStammdaten');
+      assert('accordion exists', !!section);
+      assert('main sections exist', document.querySelectorAll('.main-section').length === 5);
+
+      if (failures.length === 0) {
+        setStatus('Selbsttest erfolgreich. Keine Fehler gefunden.', 'ok');
+      } else {
+        setStatus('Selbsttest fehlgeschlagen: ' + failures.join(', '), 'error');
+      }
+      updateEditModeUI();
+      renderAnlagenListe();
+    }
+
+    function createId(prefix) {
+      var d = new Date();
+      var stamp = d.getFullYear().toString() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '-' + pad2(d.getHours()) + pad2(d.getMinutes()) + pad2(d.getSeconds());
+      var rnd = Math.random().toString(16).slice(2, 8).toUpperCase();
+      return prefix + '-' + stamp + '-' + rnd;
+    }
+
+    function pad2(number) {
+      number = String(number);
+      return number.length < 2 ? '0' + number : number;
+    }
+
+    function pad3(number) {
+      number = String(number);
+      while (number.length < 3) number = '0' + number;
+      return number;
+    }
+
+    function boolText(value) {
+      return value === true ? 'Ja' : 'Nein';
+    }
+
+    function csvCell(value) {
+      value = value === null || value === undefined ? '' : String(value);
+      return '"' + value.replace(/"/g, '""') + '"';
+    }
+
+    function sanitizeFileName(name) {
+      return String(name)
+        .replace(/[\\/:*?"<>|#%{}~&]/g, '_')
+        .replace(/\s+/g, '_')
+        .slice(0, 160);
+    }
+
+    function safePathPart(value) {
+      var cleaned = sanitizeFileName(value || 'ohne_name').replace(/\.+/g, '_');
+      return cleaned || 'ohne_name';
+    }
+
+    function setStatus(message, type) {
+      var status = document.getElementById('status');
+      status.className = 'status';
+      if (!message) {
+        status.textContent = '';
+        return;
+      }
+      status.textContent = message;
+      status.className = 'status ' + type;
+    }
+
+    function getErrorText(error) {
+      if (!error) return 'Unbekannter Fehler';
+      return error.message || String(error);
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(text) {
+      return escapeHtml(text).replace(/`/g, '&#096;');
+    }
+
+    function ensureMainPhotoKey() {
+      var box = document.getElementById('anlagePhotoBox');
+      if (!box) return '';
+      var current = box.getAttribute('data-photo-key') || box.dataset.photoKey;
+      if (!current) current = makeDraftPhotoKey('anlage');
+      setMainPhotoKey(current);
+      return current;
+    }
+
+    function setMainPhotoKey(key) {
+      var box = document.getElementById('anlagePhotoBox');
+      if (!box) return;
+      box.setAttribute('data-photo-key', key);
+      box.dataset.photoKey = key;
+    }
+
+    function assignKuehlstellePhotoKey(card, values) {
+      var key = values && values.fotoKey ? values.fotoKey : makeDraftPhotoKey('kuehlstelle');
+      card.setAttribute('data-photo-key', key);
+      card.dataset.photoKey = key;
+      var box = card.querySelector('.photo-box');
+      if (box) {
+        box.setAttribute('data-photo-key', key);
+        box.dataset.photoKey = key;
+      }
+    }
+
+    function makeDraftPhotoKey(kind) {
+      return 'draft:' + kind + ':' + createId('PH');
+    }
+
+    function makeEditPhotoKey(recordId, kind, childId) {
+      return 'edit:' + recordId + ':' + kind + (childId ? ':' + childId : '');
+    }
+
+    function getFinalAnlagePhotoKey(anlagenId) {
+      return 'anlage:' + anlagenId + ':main';
+    }
+
+    function getFinalKuehlstellePhotoKey(anlagenId, kuehlstellenId) {
+      return 'anlage:' + anlagenId + ':ks:' + kuehlstellenId;
+    }
+
+    function isTemporaryPhotoKey(key) {
+      return String(key || '').indexOf('draft:') === 0 || String(key || '').indexOf('edit:') === 0;
+    }
+
+    async function openPhotoDb() {
+      if (photoDbPromise) return photoDbPromise;
+      photoDbPromise = new Promise(function (resolve, reject) {
+        if (!window.indexedDB) {
+          reject(new Error('IndexedDB wird von diesem Browser nicht unterstützt.'));
+          return;
+        }
+        var request = indexedDB.open(PHOTO_DB_NAME, PHOTO_DB_VERSION);
+        request.onupgradeneeded = function (event) {
+          var db = event.target.result;
+          if (!db.objectStoreNames.contains(PHOTO_STORE)) {
+            db.createObjectStore(PHOTO_STORE, { keyPath: 'key' });
+          }
+        };
+        request.onsuccess = function () { resolve(request.result); };
+        request.onerror = function () { reject(request.error || new Error('IndexedDB konnte nicht geöffnet werden.')); };
+      });
+      return photoDbPromise;
+    }
+
+    function idbRequestToPromise(request) {
+      return new Promise(function (resolve, reject) {
+        request.onsuccess = function () { resolve(request.result); };
+        request.onerror = function () { reject(request.error); };
+      });
+    }
+
+    async function getPhotos(key) {
+      if (!key) return [];
+      var db = await openPhotoDb();
+      var tx = db.transaction(PHOTO_STORE, 'readonly');
+      var store = tx.objectStore(PHOTO_STORE);
+      var entry = await idbRequestToPromise(store.get(key));
+      return entry && Array.isArray(entry.photos) ? entry.photos : [];
+    }
+
+    async function putPhotos(key, photos) {
+      if (!key) return;
+      var db = await openPhotoDb();
+      var tx = db.transaction(PHOTO_STORE, 'readwrite');
+      var store = tx.objectStore(PHOTO_STORE);
+      await idbRequestToPromise(store.put({ key: key, photos: photos || [], updatedAt: new Date().toISOString() }));
+    }
+
+    async function deletePhotoKey(key) {
+      if (!key) return;
+      var db = await openPhotoDb();
+      var tx = db.transaction(PHOTO_STORE, 'readwrite');
+      var store = tx.objectStore(PHOTO_STORE);
+      await idbRequestToPromise(store.delete(key));
+    }
+
+    async function clearPhotoDb() {
+      try {
+        var db = await openPhotoDb();
+        var tx = db.transaction(PHOTO_STORE, 'readwrite');
+        var store = tx.objectStore(PHOTO_STORE);
+        await idbRequestToPromise(store.clear());
+      } catch (error) {
+        setStatus('Fotospeicher konnte nicht vollständig gelöscht werden: ' + getErrorText(error), 'error');
+      }
+    }
+
+    async function copyPhotos(sourceKey, targetKey) {
+      if (!sourceKey || !targetKey || sourceKey === targetKey) return;
+      var photos = await getPhotos(sourceKey);
+      await putPhotos(targetKey, photos.slice());
+    }
+
+    async function movePhotos(sourceKey, targetKey) {
+      if (!sourceKey || !targetKey || sourceKey === targetKey) return;
+      var photos = await getPhotos(sourceKey);
+      await putPhotos(targetKey, photos.slice());
+      await deletePhotoKey(sourceKey);
+    }
+
+    async function cleanupPhotoKeyIfTemporary(key) {
+      try {
+        if (isTemporaryPhotoKey(key)) await deletePhotoKey(key);
+      } catch (error) {
+        setStatus('Temporäre Fotos konnten nicht gelöscht werden: ' + getErrorText(error), 'error');
+      }
+    }
+
+    async function cleanupCurrentTemporaryPhotos() {
+      var keys = [];
+      var mainBox = document.getElementById('anlagePhotoBox');
+      if (mainBox) keys.push(mainBox.getAttribute('data-photo-key'));
+      document.querySelectorAll('.ks-card').forEach(function (card) {
+        keys.push(card.getAttribute('data-photo-key'));
+      });
+      if (state.draft) {
+        if (state.draft.anlage) keys.push(state.draft.anlage.fotoKey);
+        (state.draft.kuehlstellen || []).forEach(function (ks) { keys.push(ks.fotoKey); });
+      }
+      for (var i = 0; i < keys.length; i++) {
+        if (isTemporaryPhotoKey(keys[i])) await deletePhotoKey(keys[i]);
+      }
+    }
+
+    async function handlePhotoInputChange(event) {
+      var input = event.target;
+      var box = input.closest('.photo-box');
+      if (!box) return;
+      var key = box.getAttribute('data-photo-key') || box.dataset.photoKey;
+      if (!key) {
+        key = makeDraftPhotoKey('foto');
+        box.setAttribute('data-photo-key', key);
+        box.dataset.photoKey = key;
+      }
+
+      try {
+        var existing = await getPhotos(key);
+        var files = input.files || [];
+        for (var i = 0; i < files.length; i++) {
+          existing.push({
+            id: createId('F'),
+            name: files[i].name,
+            type: files[i].type || 'application/octet-stream',
+            size: files[i].size,
+            lastModified: files[i].lastModified || Date.now(),
+            data: await files[i].arrayBuffer()
+          });
+        }
+        await putPhotos(key, existing);
+        input.value = '';
+        await updatePhotoListForBox(box);
+        saveCurrentDraft();
+        saveState(false);
+        updateAllSummaries();
+      } catch (error) {
+        setStatus('Fotos konnten nicht gespeichert werden: ' + getErrorText(error), 'error');
+      }
+    }
+
+    async function handlePhotoDelete(button) {
+      var box = button.closest('.photo-box');
+      if (!box) return;
+      var key = box.getAttribute('data-photo-key') || box.dataset.photoKey;
+      var index = Number(button.getAttribute('data-photo-delete'));
+      try {
+        var photos = await getPhotos(key);
+        if (index >= 0 && index < photos.length) photos.splice(index, 1);
+        await putPhotos(key, photos);
+        await updatePhotoListForBox(box);
+        saveCurrentDraft();
+        saveState(false);
+        updateAllSummaries();
+      } catch (error) {
+        setStatus('Foto konnte nicht gelöscht werden: ' + getErrorText(error), 'error');
+      }
+    }
+
+    async function updatePhotoListForBox(box) {
+      if (!box) return;
+      var list = box.querySelector('[data-photo-list]');
+      var key = box.getAttribute('data-photo-key') || box.dataset.photoKey;
+      if (!list || !key) return;
+
+      try {
+        var photos = await getPhotos(key);
+        box.setAttribute('data-has-photos', photos.length > 0 ? 'true' : 'false');
+        var card = box.closest('.ks-card');
+        if (card) card.setAttribute('data-has-photos', photos.length > 0 ? 'true' : 'false');
+
+        list.innerHTML = '';
+        if (!photos.length) {
+          list.textContent = 'Keine Fotos gespeichert.';
+        } else {
+          for (var i = 0; i < photos.length; i++) {
+            var row = document.createElement('div');
+            row.className = 'photo-row';
+            row.innerHTML = '<div class="photo-name">' + (i + 1) + '. ' + escapeHtml(photos[i].name || 'Foto') + ' (' + formatBytes(photos[i].size || 0) + ')</div>' +
+              '<button type="button" class="photo-delete" data-photo-delete="' + i + '">Löschen</button>';
+            list.appendChild(row);
+          }
+        }
+        updateKuehlstellenSummaries();
+      } catch (error) {
+        list.textContent = 'Fotos konnten nicht gelesen werden: ' + getErrorText(error);
+      }
+    }
+
+    function refreshAllPhotoLists() {
+      document.querySelectorAll('.photo-box').forEach(function (box) {
+        updatePhotoListForBox(box);
+      });
+    }
+
+    async function getPhotoMeta(key) {
+      var photos = await getPhotos(key);
+      return photos.map(function (p) {
+        return { name: p.name || '', type: p.type || '', size: p.size || 0 };
+      });
+    }
+
+    function formatBytes(bytes) {
+      bytes = Number(bytes) || 0;
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return Math.round(bytes / 102.4) / 10 + ' KB';
+      return Math.round(bytes / 1024 / 102.4) / 10 + ' MB';
+    }
+
+    async function finalizeRecordPhotoKeys(record, previousRecord) {
+      if (!record || !record.anlagenId) return;
+
+      var finalMainKey = getFinalAnlagePhotoKey(record.anlagenId);
+      var currentMainKey = record.anlage && record.anlage.fotoKey ? record.anlage.fotoKey : finalMainKey;
+      if (currentMainKey !== finalMainKey) await movePhotos(currentMainKey, finalMainKey);
+      record.anlage.fotoKey = finalMainKey;
+      record.anlage.fotos = await getPhotoMeta(finalMainKey);
+      record.anlage.hasFotos = record.anlage.fotos.length > 0;
+
+      var kuehlstellen = record.kuehlstellen || [];
+      for (var i = 0; i < kuehlstellen.length; i++) {
+        var ks = kuehlstellen[i];
+        ks.lfdNr = i + 1;
+        ks.kuehlstellenId = ks.kuehlstellenId || ('KS-' + pad3(i + 1));
+        var finalKsKey = getFinalKuehlstellePhotoKey(record.anlagenId, ks.kuehlstellenId);
+        var currentKsKey = ks.fotoKey || finalKsKey;
+        if (currentKsKey !== finalKsKey) await movePhotos(currentKsKey, finalKsKey);
+        ks.fotoKey = finalKsKey;
+        ks.fotos = await getPhotoMeta(finalKsKey);
+        ks.hasFotos = ks.fotos.length > 0;
+      }
+
+      if (previousRecord) await deleteUnusedRecordPhotos(previousRecord, record);
+    }
+
+    async function buildEditableRecordWithStagedPhotos(record) {
+      var clone = JSON.parse(JSON.stringify(record || {}));
+      if (!clone.anlage) clone.anlage = {};
+      var recordId = clone.anlagenId;
+
+      var finalMainKey = clone.anlage.fotoKey || getFinalAnlagePhotoKey(recordId);
+      var editMainKey = makeEditPhotoKey(recordId, 'main');
+      await copyPhotos(finalMainKey, editMainKey);
+      clone.anlage.fotoKey = editMainKey;
+
+      var kuehlstellen = clone.kuehlstellen || [];
+      for (var i = 0; i < kuehlstellen.length; i++) {
+        var ks = kuehlstellen[i];
+        var ksId = ks.kuehlstellenId || ('KS-' + pad3(i + 1));
+        var finalKsKey = ks.fotoKey || getFinalKuehlstellePhotoKey(recordId, ksId);
+        var editKsKey = makeEditPhotoKey(recordId, 'ks', ksId);
+        await copyPhotos(finalKsKey, editKsKey);
+        ks.fotoKey = editKsKey;
+      }
+
+      return clone;
+    }
+
+    function collectPhotoKeysFromRecord(record) {
+      var keys = [];
+      if (!record || !record.anlagenId) return keys;
+      keys.push(record.anlage && record.anlage.fotoKey ? record.anlage.fotoKey : getFinalAnlagePhotoKey(record.anlagenId));
+      var kuehlstellen = record.kuehlstellen || [];
+      for (var i = 0; i < kuehlstellen.length; i++) {
+        var ks = kuehlstellen[i];
+        var ksId = ks.kuehlstellenId || ('KS-' + pad3(i + 1));
+        keys.push(ks.fotoKey || getFinalKuehlstellePhotoKey(record.anlagenId, ksId));
+      }
+      return keys;
+    }
+
+    async function deleteUnusedRecordPhotos(oldRecord, newRecord) {
+      var oldKeys = collectPhotoKeysFromRecord(oldRecord);
+      var newKeys = collectPhotoKeysFromRecord(newRecord);
+      for (var i = 0; i < oldKeys.length; i++) {
+        if (newKeys.indexOf(oldKeys[i]) === -1) await deletePhotoKey(oldKeys[i]);
+      }
+    }
+
+    async function deleteRecordPhotos(record) {
+      var keys = collectPhotoKeysFromRecord(record);
+      for (var i = 0; i < keys.length; i++) await deletePhotoKey(keys[i]);
+    }
+
+    async function updatePhotoBadgesInList() {
+      var badges = document.querySelectorAll('[data-photo-count-index]');
+      for (var i = 0; i < badges.length; i++) {
+        var index = Number(badges[i].getAttribute('data-photo-count-index'));
+        var record = state.anlagen[index];
+        if (!record) continue;
+        var count = 0;
+        try {
+          count += (await getPhotos(getFinalAnlagePhotoKey(record.anlagenId))).length;
+          var kuehlstellen = record.kuehlstellen || [];
+          for (var k = 0; k < kuehlstellen.length; k++) {
+            var ksId = kuehlstellen[k].kuehlstellenId || ('KS-' + pad3(k + 1));
+            count += (await getPhotos(getFinalKuehlstellePhotoKey(record.anlagenId, ksId))).length;
+          }
+          badges[i].textContent = 'Fotos: ' + count;
+        } catch (error) {
+          badges[i].textContent = 'Fotos: nicht lesbar';
+        }
+      }
+    }
+
+    async function addPhotosToZip(files, key, folder) {
+      var photos = await getPhotos(key);
+      for (var i = 0; i < photos.length; i++) {
+        var data = await photoToUint8Array(photos[i]);
+        var name = sanitizeFileName(photos[i].name || ('foto_' + pad3(i + 1) + '.jpg'));
+        files.push({
+          name: folder + '/foto_' + pad3(i + 1) + '_' + name,
+          data: data
+        });
+      }
+    }
+
+    async function photoToUint8Array(photo) {
+      if (photo && photo.blob && typeof photo.blob.arrayBuffer === 'function') {
+        return new Uint8Array(await photo.blob.arrayBuffer());
+      }
+      if (photo && photo.data instanceof ArrayBuffer) return new Uint8Array(photo.data);
+      if (photo && photo.data instanceof Uint8Array) return photo.data;
+      if (photo && photo.data && photo.data.buffer) return new Uint8Array(photo.data.buffer);
+      return new Uint8Array(0);
+    }
+
+    var crcTable = null;
+    function makeCrcTable() {
+      var table = [];
+      for (var n = 0; n < 256; n++) {
+        var c = n;
+        for (var k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+        table[n] = c >>> 0;
+      }
+      return table;
+    }
+
+    function crc32(bytes) {
+      if (!crcTable) crcTable = makeCrcTable();
+      var crc = 0 ^ -1;
+      for (var i = 0; i < bytes.length; i++) crc = (crc >>> 8) ^ crcTable[(crc ^ bytes[i]) & 0xff];
+      return (crc ^ -1) >>> 0;
+    }
+
+    function utf8Bytes(text) {
+      return new TextEncoder().encode(String(text));
+    }
+
+    function u16(value) {
+      var b = new Uint8Array(2);
+      b[0] = value & 255;
+      b[1] = (value >>> 8) & 255;
+      return b;
+    }
+
+    function u32(value) {
+      var b = new Uint8Array(4);
+      b[0] = value & 255;
+      b[1] = (value >>> 8) & 255;
+      b[2] = (value >>> 16) & 255;
+      b[3] = (value >>> 24) & 255;
+      return b;
+    }
+
+    function concatArrays(parts) {
+      var length = 0;
+      for (var i = 0; i < parts.length; i++) length += parts[i].length;
+      var result = new Uint8Array(length);
+      var offset = 0;
+      for (var j = 0; j < parts.length; j++) {
+        result.set(parts[j], offset);
+        offset += parts[j].length;
+      }
+      return result;
+    }
+
+    function dosTime(date) {
+      return ((date.getHours() & 31) << 11) | ((date.getMinutes() & 63) << 5) | ((Math.floor(date.getSeconds() / 2)) & 31);
+    }
+
+    function dosDate(date) {
+      return (((date.getFullYear() - 1980) & 127) << 9) | (((date.getMonth() + 1) & 15) << 5) | (date.getDate() & 31);
+    }
+
+    function buildZip(files) {
+      var localParts = [];
+      var centralParts = [];
+      var offset = 0;
+      var now = new Date();
+      var modTime = dosTime(now);
+      var modDate = dosDate(now);
+
+      for (var i = 0; i < files.length; i++) {
+        var nameBytes = utf8Bytes(files[i].name);
+        var dataBytes = typeof files[i].data === 'string' ? utf8Bytes(files[i].data) : files[i].data;
+        if (!(dataBytes instanceof Uint8Array)) dataBytes = new Uint8Array(dataBytes || []);
+        var crc = crc32(dataBytes);
+        var size = dataBytes.length;
+        var flags = 0x0800;
+
+        var localHeader = concatArrays([
+          u32(0x04034b50), u16(20), u16(flags), u16(0), u16(modTime), u16(modDate),
+          u32(crc), u32(size), u32(size), u16(nameBytes.length), u16(0)
+        ]);
+        localParts.push(localHeader, nameBytes, dataBytes);
+
+        var centralHeader = concatArrays([
+          u32(0x02014b50), u16(20), u16(20), u16(flags), u16(0), u16(modTime), u16(modDate),
+          u32(crc), u32(size), u32(size), u16(nameBytes.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset)
+        ]);
+        centralParts.push(centralHeader, nameBytes);
+
+        offset += localHeader.length + nameBytes.length + dataBytes.length;
+      }
+
+      var centralOffset = offset;
+      var centralDirectory = concatArrays(centralParts);
+      var centralSize = centralDirectory.length;
+      var endRecord = concatArrays([
+        u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(centralSize), u32(centralOffset), u16(0)
+      ]);
+
+      return concatArrays(localParts.concat([centralDirectory, endRecord]));
+    }
+  </script>
+</body>
+</html>
